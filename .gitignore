@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+data/tasks/
+data/vectors/
+data/transcripts/
+*.log
+.DS_Store

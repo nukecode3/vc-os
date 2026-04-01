@@ -1,0 +1,33 @@
+{
+  "name": "vc-os",
+  "version": "0.1.0",
+  "description": "VC Operating System — multi-agent pipeline for deal sourcing and analysis",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "ingest": "tsx src/agents/ingestion/run.ts",
+    "score": "tsx src/agents/intelligence/run.ts",
+    "outreach": "tsx src/agents/outreach/run.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1",
+    "pgvector": "^0.2.0",
+    "playwright": "^1.49.1",
+    "yt-dlp-wrap": "^2.3.12",
+    "googleapis": "^144.0.0",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
