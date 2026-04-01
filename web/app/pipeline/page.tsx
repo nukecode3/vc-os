@@ -1,25 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Filter, ArrowUpDown, Play, Download } from "lucide-react";
 import { ScoreBadge } from "@/components/score-badge";
 import { StatusBadge } from "@/components/status-badge";
-import { mockDeals } from "@/lib/mock-data";
+import { mockDeals, type Deal } from "@/lib/mock-data";
 import { cn, timeAgo, getRecommendationLabel } from "@/lib/utils";
 
 type SortField = "score" | "companyName" | "updatedAt" | "status";
 type SortDir = "asc" | "desc";
 
 export default function PipelinePage() {
+  const [deals, setDeals] = useState<Deal[]>(mockDeals);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Fetch deals from API on mount, fall back to mock data
+  useEffect(() => {
+    fetch("/api/deals")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.deals?.length > 0) setDeals(data.deals);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleRunIngestion() {
+    await fetch("/api/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "yc" }),
+    });
+    // Refresh deals after a delay (ingestion is async)
+    setTimeout(() => {
+      fetch("/api/deals").then((r) => r.json()).then((d) => {
+        if (d.deals?.length > 0) setDeals(d.deals);
+      });
+    }, 5000);
+  }
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const statuses = ["all", "discovered", "researching", "scored", "outreach", "pursuing", "passed"];
 
-  let filtered = mockDeals.filter((d) => {
+  let filtered = deals.filter((d) => {
     if (statusFilter !== "all" && d.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -66,11 +93,14 @@ export default function PipelinePage() {
         <div>
           <h1 className="text-2xl font-bold">Deal Pipeline</h1>
           <p className="text-muted-foreground mt-1">
-            {filtered.length} deals · {mockDeals.filter((d) => d.score).length} scored
+            {filtered.length} deals · {deals.filter((d) => d.score).length} scored
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/80 transition-colors">
+          <button
+            onClick={handleRunIngestion}
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/80 transition-colors"
+          >
             <Play className="w-4 h-4" />
             Run Ingestion
           </button>

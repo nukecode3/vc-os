@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { mockDeals } from "@/lib/mock-data";
+import { getDeals } from "@/lib/coordinator";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "score";
   const dir = searchParams.get("dir") || "desc";
 
-  let deals = [...mockDeals];
+  let deals = await getDeals();
 
   if (status && status !== "all") {
     deals = deals.filter((d) => d.status === status);

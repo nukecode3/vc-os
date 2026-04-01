@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,10 +13,11 @@ import {
   Target,
   Mail,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { ScoreBadge } from "@/components/score-badge";
 import { StatusBadge } from "@/components/status-badge";
-import { getDeal } from "@/lib/mock-data";
+import { getDeal as getMockDeal, type Deal } from "@/lib/mock-data";
 import { cn, getScoreColor, getRecommendationLabel } from "@/lib/utils";
 
 export default function DealDetailPage({
@@ -25,7 +26,40 @@ export default function DealDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const deal = getDeal(id);
+  const [deal, setDeal] = useState<Deal | null | undefined>(getMockDeal(id));
+  const [scoring, setScoring] = useState(false);
+  const [outreaching, setOutreaching] = useState(false);
+
+  // Try to fetch from real API
+  useEffect(() => {
+    fetch(`/api/deals/${id}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.deal) setDeal(data.deal); })
+      .catch(() => {});
+  }, [id]);
+
+  async function handleScore() {
+    setScoring(true);
+    await fetch(`/api/deals/${id}/score`, { method: "POST" });
+    // Poll for completion
+    const interval = setInterval(async () => {
+      const res = await fetch(`/api/deals/${id}`);
+      const data = await res.json();
+      if (data.deal?.score != null) {
+        setDeal(data.deal);
+        setScoring(false);
+        clearInterval(interval);
+      }
+    }, 3000);
+    // Stop polling after 2 minutes
+    setTimeout(() => { clearInterval(interval); setScoring(false); }, 120000);
+  }
+
+  async function handleOutreach() {
+    setOutreaching(true);
+    await fetch(`/api/deals/${id}/outreach`, { method: "POST" });
+    setTimeout(() => setOutreaching(false), 3000);
+  }
 
   if (!deal) {
     return (
@@ -70,11 +104,23 @@ export default function DealDetailPage({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-sm hover:bg-muted/50">
-              <FileText className="w-4 h-4" /> Generate Memo
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm hover:bg-accent/80">
-              <Mail className="w-4 h-4" /> Generate Outreach
+            {!deal.score && (
+              <button
+                onClick={handleScore}
+                disabled={scoring}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {scoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+                {scoring ? "Scoring..." : "Score Deal"}
+              </button>
+            )}
+            <button
+              onClick={handleOutreach}
+              disabled={outreaching || !deal.score}
+              className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm hover:bg-accent/80 disabled:opacity-50"
+            >
+              {outreaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              {outreaching ? "Generating..." : "Generate Outreach"}
             </button>
           </div>
         </div>

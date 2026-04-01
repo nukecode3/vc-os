@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
-import { getDeal } from "@/lib/coordinator";
+import { triggerScore, getDeal } from "@/lib/coordinator";
 
-export async function GET(
+export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -12,5 +12,6 @@ export async function GET(
     return Response.json({ error: "Deal not found" }, { status: 404 });
   }
 
-  return Response.json({ deal });
+  const result = await triggerScore(id);
+  return Response.json(result);
 }

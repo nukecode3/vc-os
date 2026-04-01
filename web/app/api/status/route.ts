@@ -1,10 +1,9 @@
-import { mockStats } from "@/lib/mock-data";
+import { getStatus } from "@/lib/coordinator";
 
 export async function GET() {
+  const status = await getStatus();
   return Response.json({
-    status: "running",
-    ...mockStats,
-    uptime: "2h 34m",
+    ...status,
     lastTick: new Date().toISOString(),
   });
 }
